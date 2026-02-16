@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Verifier</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Email Verifier</h1>
+    <p class="subtitle">Comprehensive email verification — format, MX, SMTP, and more</p>
+    <form id="verify-form">
+      <div class="input-group">
+        <input type="text" id="email" placeholder="Enter email address" autocomplete="off" required>
+        <button type="submit" id="verify-btn">Verify</button>
+      </div>
+    </form>
+    <div id="suggestion" class="suggestion hidden"></div>
+    <div id="results" class="results hidden"></div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
