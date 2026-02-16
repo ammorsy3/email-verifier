@@ -88,8 +88,8 @@ export async function verifyEmail(email: string): Promise<VerificationResult> {
     } else if (smtpResult.valid === false) {
       checks.smtp = { passed: false, message: "Mailbox does not exist" };
     } else {
-      // Inconclusive — don't fail validation
-      checks.smtp = { passed: true, message: smtpResult.message };
+      // Inconclusive — cannot confirm mailbox exists, mark as failed
+      checks.smtp = { passed: false, message: smtpResult.message };
     }
   } else {
     checks.smtp = { passed: false, message: "Skipped (no MX records)" };
@@ -153,7 +153,7 @@ export async function verifyEmailBatch(emails: string[]): Promise<BatchVerificat
   for (const email of validFormatEmails) {
     const smtpResult = smtpBatch.results.get(email);
     if (smtpResult) {
-      const passed = smtpResult.valid === true || smtpResult.valid === null; // inconclusive doesn't fail
+      const passed = smtpResult.valid === true; // only explicit success counts as valid
       results.push({ email, isValid: passed && !smtpBatch.isCatchAll, smtp: { passed, message: smtpResult.message } });
     } else {
       // Email was not tested (early exit)
