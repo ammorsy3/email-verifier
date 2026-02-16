@@ -22,31 +22,55 @@
 
   <div class="container docs-container">
     <h2>API Documentation</h2>
-    <p class="subtitle">Use these endpoints to integrate email verification into your applications.</p>
+    <p class="subtitle">Integrate email verification into your app with two simple endpoints. No API key required.</p>
 
-    <!-- Single Verify -->
-    <div class="endpoint">
+    <div class="base-url-box">
+      <span class="base-url-label">Base URL</span>
+      <code class="base-url">https://email-verifier-bookedbycold.vercel.app</code>
+    </div>
+
+    <div class="quick-nav">
+      <a href="#endpoint-single" class="nav-chip">Single Verify</a>
+      <a href="#endpoint-batch" class="nav-chip">Batch Verify</a>
+    </div>
+
+    <!-- ─── Single Verify ─── -->
+    <div class="endpoint" id="endpoint-single">
       <div class="endpoint-header">
         <span class="method post">POST</span>
         <code class="path">/api/verify</code>
       </div>
-      <p class="endpoint-desc">Verify a single email address. Runs format, MX, SMTP, disposable, role-based, and free provider checks.</p>
+      <p class="endpoint-desc">Verify a single email address. Returns six independent checks: format validation, MX record lookup, SMTP mailbox probe, disposable domain detection, role-based address detection, and free provider detection.</p>
 
       <div class="doc-section">
-        <h4>Request Body</h4>
-        <pre><code>{
-  "email": "user@example.com"
-}</code></pre>
+        <h4>Request</h4>
+        <p class="field-note">Send a JSON body with one field:</p>
+        <table class="field-table">
+          <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>email</code></td><td>string</td><td>Yes</td><td>The email address to verify</td></tr>
+          </tbody>
+        </table>
       </div>
 
       <div class="doc-section">
-        <h4>Response</h4>
+        <h4>cURL Example</h4>
+        <pre><code>curl -X POST https://email-verifier-bookedbycold.vercel.app/api/verify \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'</code></pre>
+      </div>
+
+      <div class="doc-section">
+        <h4>Response Example</h4>
         <pre><code>{
-  "email": "user@example.com",
+  "email": "user@gmail.com",
   "isValid": true,
   "checks": {
     "format":       { "passed": true,  "message": "Valid email format" },
-    "mx":           { "passed": true,  "message": "MX records found", "records": [...] },
+    "mx":           { "passed": true,  "message": "MX records found",
+                      "records": [
+                        { "exchange": "alt1.gmail-smtp-in.l.google.com", "priority": 5 }
+                      ] },
     "smtp":         { "passed": true,  "message": "Mailbox exists" },
     "disposable":   { "passed": true,  "message": "Not a disposable email" },
     "roleBased":    { "passed": true,  "message": "Not a role-based address" },
@@ -59,38 +83,76 @@
       </div>
 
       <div class="doc-section">
-        <h4>Example</h4>
-        <pre><code>curl -X POST /api/verify \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com"}'</code></pre>
+        <h4>Response Fields</h4>
+        <table class="field-table">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>email</code></td><td>string</td><td>The email that was checked (lowercased, trimmed)</td></tr>
+            <tr><td><code>isValid</code></td><td>boolean</td><td><strong>true</strong> when format + MX + SMTP all pass</td></tr>
+            <tr><td><code>checks.format</code></td><td>object</td><td>Whether the email has valid syntax (local@domain)</td></tr>
+            <tr><td><code>checks.mx</code></td><td>object</td><td>Whether the domain has MX records. Includes <code>records</code> array when found</td></tr>
+            <tr><td><code>checks.smtp</code></td><td>object</td><td>Whether the SMTP server confirmed the mailbox exists</td></tr>
+            <tr><td><code>checks.disposable</code></td><td>object</td><td>Whether the domain is a known throwaway email provider</td></tr>
+            <tr><td><code>checks.roleBased</code></td><td>object</td><td>Whether the local part is generic (info@, admin@, support@, etc.)</td></tr>
+            <tr><td><code>checks.freeProvider</code></td><td>object</td><td>Whether the domain is a free provider (gmail, yahoo, outlook, etc.)</td></tr>
+            <tr><td><code>isCatchAll</code></td><td>boolean</td><td><strong>true</strong> if the server accepts mail for any address (verification is inconclusive)</td></tr>
+            <tr><td><code>suggestedDomain</code></td><td>string | null</td><td>Typo correction suggestion, e.g. "gnail.com" &rarr; "gmail.com"</td></tr>
+            <tr><td><code>timestamp</code></td><td>string</td><td>ISO 8601 timestamp of the verification</td></tr>
+          </tbody>
+        </table>
+        <p class="field-note">Each check object has <code>{ "passed": boolean, "message": string }</code>.</p>
+      </div>
+
+      <div class="doc-section">
+        <h4>Error Responses</h4>
+        <table class="error-table">
+          <thead><tr><th>Status</th><th>Body</th><th>When</th></tr></thead>
+          <tbody>
+            <tr><td><code>400</code></td><td><code>{ "error": "Email is required" }</code></td><td>Missing or non-string <code>email</code> field</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <!-- Batch Verify -->
-    <div class="endpoint">
+    <!-- ─── Batch Verify ─── -->
+    <div class="endpoint" id="endpoint-batch">
       <div class="endpoint-header">
         <span class="method post">POST</span>
         <code class="path">/api/verify/batch</code>
       </div>
-      <p class="endpoint-desc">Verify up to 10 emails on the same domain in a single request. Uses one SMTP connection with early exit on the first valid mailbox found.</p>
+      <p class="endpoint-desc">Verify multiple email variations for the same domain in one request. Opens a single SMTP connection and stops as soon as it finds a valid mailbox. Ideal for testing name permutations (john.smith@, jsmith@, j.smith@) without burning through connections.</p>
 
       <div class="doc-section">
-        <h4>Request Body</h4>
-        <pre><code>{
-  "emails": [
-    "john.smith@company.com",
-    "jsmith@company.com",
-    "john.s@company.com"
-  ]
-}</code></pre>
+        <h4>Request</h4>
+        <p class="field-note">Send a JSON body with one field:</p>
+        <table class="field-table">
+          <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>emails</code></td><td>string[]</td><td>Yes</td><td>Array of email addresses to verify</td></tr>
+          </tbody>
+        </table>
         <div class="constraints">
-          <span class="constraint">Max 10 emails</span>
-          <span class="constraint">Same domain required</span>
+          <span class="constraint">Max 10 emails per request</span>
+          <span class="constraint">All emails must share the same domain</span>
+          <span class="constraint">Stops on first valid hit</span>
         </div>
       </div>
 
       <div class="doc-section">
-        <h4>Response</h4>
+        <h4>cURL Example</h4>
+        <pre><code>curl -X POST https://email-verifier-bookedbycold.vercel.app/api/verify/batch \
+  -H "Content-Type: application/json" \
+  -d '{
+    "emails": [
+      "john.smith@company.com",
+      "jsmith@company.com",
+      "john.s@company.com"
+    ]
+  }'</code></pre>
+      </div>
+
+      <div class="doc-section">
+        <h4>Response Example</h4>
         <pre><code>{
   "domain": "company.com",
   "isCatchAll": false,
@@ -126,23 +188,52 @@
       </div>
 
       <div class="doc-section">
-        <h4>Example</h4>
-        <pre><code>curl -X POST /api/verify/batch \
-  -H "Content-Type: application/json" \
-  -d '{"emails": ["john@company.com", "jsmith@company.com"]}'</code></pre>
+        <h4>Response Fields</h4>
+        <table class="field-table">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>domain</code></td><td>string</td><td>The shared domain that was checked</td></tr>
+            <tr><td><code>isCatchAll</code></td><td>boolean</td><td><strong>true</strong> if the server accepts any address (all results become inconclusive)</td></tr>
+            <tr><td><code>domainInfo.isDisposable</code></td><td>boolean</td><td>Whether the domain is a known throwaway email provider</td></tr>
+            <tr><td><code>domainInfo.isFreeProvider</code></td><td>boolean</td><td>Whether the domain is a free provider (gmail, yahoo, etc.)</td></tr>
+            <tr><td><code>domainInfo.hasMxRecords</code></td><td>boolean</td><td>Whether the domain has MX records configured</td></tr>
+            <tr><td><code>domainInfo.mxRecords</code></td><td>array</td><td>List of MX records with <code>exchange</code> and <code>priority</code></td></tr>
+            <tr><td><code>results</code></td><td>array</td><td>Per-email results in the order submitted</td></tr>
+            <tr><td><code>results[].email</code></td><td>string</td><td>The email address</td></tr>
+            <tr><td><code>results[].isValid</code></td><td>boolean</td><td><strong>true</strong> if the SMTP server confirmed the mailbox exists</td></tr>
+            <tr><td><code>results[].smtp.passed</code></td><td>boolean</td><td>Whether the SMTP check passed</td></tr>
+            <tr><td><code>results[].smtp.message</code></td><td>string</td><td>Human-readable result ("Mailbox exists", "Mailbox does not exist", "Skipped (early exit)", etc.)</td></tr>
+            <tr><td><code>validEmail</code></td><td>string | null</td><td>The first email that was confirmed valid, or <code>null</code> if none passed</td></tr>
+            <tr><td><code>stoppedEarly</code></td><td>boolean</td><td><strong>true</strong> if a valid mailbox was found and remaining emails were skipped</td></tr>
+            <tr><td><code>timestamp</code></td><td>string</td><td>ISO 8601 timestamp of the verification</td></tr>
+          </tbody>
+        </table>
       </div>
 
       <div class="doc-section">
         <h4>Error Responses</h4>
         <table class="error-table">
-          <thead><tr><th>Status</th><th>Condition</th></tr></thead>
+          <thead><tr><th>Status</th><th>Body</th><th>When</th></tr></thead>
           <tbody>
-            <tr><td><code>400</code></td><td>emails is not a non-empty array</td></tr>
-            <tr><td><code>400</code></td><td>More than 10 emails</td></tr>
-            <tr><td><code>400</code></td><td>Emails span multiple domains</td></tr>
+            <tr><td><code>400</code></td><td><code>{ "error": "emails must be a non-empty array of strings" }</code></td><td>Missing, empty, or non-array <code>emails</code> field</td></tr>
+            <tr><td><code>400</code></td><td><code>{ "error": "Maximum 10 emails per batch" }</code></td><td>More than 10 emails in the array</td></tr>
+            <tr><td><code>400</code></td><td><code>{ "error": "All entries must be valid email strings" }</code></td><td>Non-string entries or entries without @</td></tr>
+            <tr><td><code>400</code></td><td><code>{ "error": "All emails must share the same domain" }</code></td><td>Emails from different domains</td></tr>
           </tbody>
         </table>
       </div>
+    </div>
+
+    <!-- ─── How It Works ─── -->
+    <div class="how-it-works">
+      <h3>How Batch Verification Works</h3>
+      <ol class="steps-list">
+        <li><strong>Connect once</strong> &mdash; opens a single SMTP connection to the domain's mail server</li>
+        <li><strong>Catch-all check</strong> &mdash; sends a random address first; if accepted, the server accepts everything and individual results are inconclusive</li>
+        <li><strong>Test each email</strong> &mdash; sends RCPT TO for each address in order</li>
+        <li><strong>Early exit</strong> &mdash; stops immediately when the first valid mailbox is found (remaining emails are marked as "Skipped")</li>
+        <li><strong>Close connection</strong> &mdash; sends QUIT and returns all results</li>
+      </ol>
     </div>
   </div>
 

@@ -248,6 +248,58 @@ button:disabled {
   margin-bottom: 0.25rem;
 }
 
+.base-url-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.65rem 1rem;
+  background: #f0f4ff;
+  border: 1px solid #c7d6fe;
+  border-radius: 8px;
+}
+
+.base-url-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #4a6cf7;
+  white-space: nowrap;
+}
+
+.base-url {
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+  font-size: 0.88rem;
+  color: #1a1a2e;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.quick-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.nav-chip {
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #4a6cf7;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.nav-chip:hover {
+  background: #f0f4ff;
+  border-color: #c7d6fe;
+}
+
 .endpoint {
   margin-top: 1.5rem;
   padding: 1.25rem;
@@ -318,6 +370,48 @@ button:disabled {
   font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
 }
 
+.field-note {
+  font-size: 0.84rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.field-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.field-table th {
+  text-align: left;
+  padding: 0.45rem 0.65rem;
+  background: #eef0f4;
+  color: #555;
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.field-table td {
+  padding: 0.45rem 0.65rem;
+  border-top: 1px solid #e4e7ec;
+  color: #444;
+  vertical-align: top;
+}
+
+.field-table code {
+  background: #eef0f4;
+  color: #1a1a2e;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
 .constraints {
   display: flex;
   gap: 0.5rem;
@@ -339,23 +433,26 @@ button:disabled {
 .error-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: 0.83rem;
   margin-top: 0.25rem;
 }
 
 .error-table th {
   text-align: left;
-  padding: 0.4rem 0.75rem;
+  padding: 0.45rem 0.65rem;
   background: #eef0f4;
   color: #555;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .error-table td {
-  padding: 0.4rem 0.75rem;
+  padding: 0.45rem 0.65rem;
   border-top: 1px solid #e4e7ec;
   color: #444;
+  vertical-align: top;
 }
 
 .error-table code {
@@ -363,6 +460,36 @@ button:disabled {
   color: #c62828;
   padding: 0.1rem 0.4rem;
   border-radius: 4px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
+}
+
+/* How it works */
+.how-it-works {
+  margin-top: 1.75rem;
+  padding: 1.25rem;
+  background: #f0f4ff;
+  border: 1px solid #c7d6fe;
+  border-radius: 10px;
+}
+
+.how-it-works h3 {
+  font-size: 1rem;
+  color: #1a1a2e;
+  margin-bottom: 0.75rem;
+}
+
+.steps-list {
+  padding-left: 1.25rem;
+  font-size: 0.88rem;
+  color: #444;
+  line-height: 1.7;
+}
+
+.steps-list li {
+  margin-bottom: 0.3rem;
+}
+
+.steps-list strong {
+  color: #1a1a2e;
 }
