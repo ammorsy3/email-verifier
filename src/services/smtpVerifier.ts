@@ -132,10 +132,10 @@ export async function verifySmtp(
         if (rcpt.code === 250) {
           finish({ valid: true, isCatchAll: false, message: "Mailbox exists" });
         } else if (rcpt.code >= 500 && rcpt.code < 600) {
-          finish({ valid: false, isCatchAll: false, message: "Mailbox does not exist" });
+          finish({ valid: false, isCatchAll: false, message: `Mailbox does not exist (${rcpt.code}: ${rcpt.text})` });
         } else if (rcpt.code >= 400 && rcpt.code < 500) {
           // Greylisting or temporary error
-          finish({ valid: null, isCatchAll: false, message: "Temporarily unavailable (greylisting)" });
+          finish({ valid: null, isCatchAll: false, message: `Temporarily unavailable (${rcpt.code}: ${rcpt.text})` });
         } else {
           finish({ valid: null, isCatchAll: false, message: `Unexpected response: ${rcpt.text}` });
         }
@@ -241,9 +241,9 @@ export async function verifySmtpBatch(
             validEmail = email;
             break; // Early exit on first valid
           } else if (rcpt.code >= 500 && rcpt.code < 600) {
-            results.set(email, { valid: false, message: "Mailbox does not exist" });
+            results.set(email, { valid: false, message: `Mailbox does not exist (${rcpt.code}: ${rcpt.text})` });
           } else if (rcpt.code >= 400 && rcpt.code < 500) {
-            results.set(email, { valid: null, message: "Temporarily unavailable (greylisting)" });
+            results.set(email, { valid: null, message: `Temporarily unavailable (${rcpt.code}: ${rcpt.text})` });
           } else {
             results.set(email, { valid: null, message: `Unexpected response: ${rcpt.text}` });
           }
