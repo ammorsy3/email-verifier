@@ -129,7 +129,14 @@ export async function verifySmtp(
             finish({ valid: true, isCatchAll: false, message: "Mailbox exists" });
           }
         } else if (rcpt.code >= 500 && rcpt.code < 600) {
-          finish({ valid: false, isCatchAll: false, message: `Mailbox does not exist (${rcpt.code}: ${rcpt.text})` });
+          // Check enhanced status code: 5.1.1 = user unknown, 5.2.1 = mailbox full/rate-limited (user exists)
+          const isRateLimited = rcpt.text.includes("5.2.1") || rcpt.text.includes("rate") || rcpt.text.includes("over quota");
+          const isMailboxFull = rcpt.text.includes("5.2.2") || rcpt.text.includes("full") || rcpt.text.includes("quota");
+          if (isRateLimited || isMailboxFull) {
+            finish({ valid: true, isCatchAll: false, message: `Mailbox exists (rate-limited or full)` });
+          } else {
+            finish({ valid: false, isCatchAll: false, message: `Mailbox does not exist (${rcpt.code}: ${rcpt.text})` });
+          }
         } else if (rcpt.code >= 400 && rcpt.code < 500) {
           finish({ valid: null, isCatchAll: false, message: `Temporarily unavailable (${rcpt.code}: ${rcpt.text})` });
         } else {
@@ -229,7 +236,15 @@ export async function verifySmtpBatch(
             validEmail = email;
             break; // Early exit on first valid
           } else if (rcpt.code >= 500 && rcpt.code < 600) {
-            results.set(email, { valid: false, message: `Mailbox does not exist (${rcpt.code}: ${rcpt.text})` });
+            const isRateLimited = rcpt.text.includes("5.2.1") || rcpt.text.includes("rate") || rcpt.text.includes("over quota");
+            const isMailboxFull = rcpt.text.includes("5.2.2") || rcpt.text.includes("full") || rcpt.text.includes("quota");
+            if (isRateLimited || isMailboxFull) {
+              results.set(email, { valid: true, message: "Mailbox exists (rate-limited or full)" });
+              validEmail = email;
+              break;
+            } else {
+              results.set(email, { valid: false, message: `Mailbox does not exist (${rcpt.code}: ${rcpt.text})` });
+            }
           } else if (rcpt.code >= 400 && rcpt.code < 500) {
             results.set(email, { valid: null, message: `Temporarily unavailable (${rcpt.code}: ${rcpt.text})` });
           } else {
