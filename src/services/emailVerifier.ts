@@ -86,7 +86,7 @@ export async function verifyEmail(email: string): Promise<VerificationResult> {
     if (smtpResult.valid === true) {
       checks.smtp = { passed: true, message: "Mailbox exists" };
     } else if (smtpResult.valid === false) {
-      checks.smtp = { passed: false, message: "Mailbox does not exist" };
+      checks.smtp = { passed: false, message: smtpResult.message };
     } else {
       // Inconclusive — cannot confirm mailbox exists, mark as failed
       checks.smtp = { passed: false, message: smtpResult.message };
