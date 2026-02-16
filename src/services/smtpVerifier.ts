@@ -113,28 +113,24 @@ export async function verifySmtp(
           return;
         }
 
-        // Catch-all detection: test with random address first
-        const catchAllCheck = await sendCommand(socket, `RCPT TO:<${randomEmail}>`);
-        const isCatchAll = catchAllCheck.code === 250;
-
-        if (isCatchAll) {
-          // Server accepts anything — can't reliably verify individual addresses
-          finish({ valid: null, isCatchAll: true, message: "Catch-all domain detected" });
-          return;
-        }
-
-        // Reset and test actual email
-        await sendCommand(socket, "RSET");
-        await sendCommand(socket, `MAIL FROM:<>`);
-
+        // Test the actual email first
         const rcpt = await sendCommand(socket, `RCPT TO:<${email}>`);
 
         if (rcpt.code === 250) {
-          finish({ valid: true, isCatchAll: false, message: "Mailbox exists" });
+          // Email was accepted — now check if it's a catch-all domain
+          await sendCommand(socket, "RSET");
+          await sendCommand(socket, `MAIL FROM:<>`);
+          const catchAllCheck = await sendCommand(socket, `RCPT TO:<${randomEmail}>`);
+          const isCatchAll = catchAllCheck.code === 250;
+
+          if (isCatchAll) {
+            finish({ valid: null, isCatchAll: true, message: "Catch-all domain detected" });
+          } else {
+            finish({ valid: true, isCatchAll: false, message: "Mailbox exists" });
+          }
         } else if (rcpt.code >= 500 && rcpt.code < 600) {
           finish({ valid: false, isCatchAll: false, message: `Mailbox does not exist (${rcpt.code}: ${rcpt.text})` });
         } else if (rcpt.code >= 400 && rcpt.code < 500) {
-          // Greylisting or temporary error
           finish({ valid: null, isCatchAll: false, message: `Temporarily unavailable (${rcpt.code}: ${rcpt.text})` });
         } else {
           finish({ valid: null, isCatchAll: false, message: `Unexpected response: ${rcpt.text}` });
@@ -217,23 +213,15 @@ export async function verifySmtpBatch(
           return;
         }
 
-        // Catch-all detection
-        const catchAllCheck = await sendCommand(socket, `RCPT TO:<${randomEmail}>`);
-        if (catchAllCheck.code === 250) {
-          for (const email of emails) {
-            results.set(email, { valid: null, message: "Catch-all domain detected" });
-          }
-          finish({ results, isCatchAll: true, validEmail: null });
-          return;
-        }
-
-        // Test each email
+        // Test each email first
         let validEmail: string | null = null;
         for (const email of emails) {
           if (settled) break;
 
-          await sendCommand(socket, "RSET");
-          await sendCommand(socket, `MAIL FROM:<>`);
+          if (email !== emails[0]) {
+            await sendCommand(socket, "RSET");
+            await sendCommand(socket, `MAIL FROM:<>`);
+          }
           const rcpt = await sendCommand(socket, `RCPT TO:<${email}>`);
 
           if (rcpt.code === 250) {
@@ -249,7 +237,21 @@ export async function verifySmtpBatch(
           }
         }
 
-        finish({ results, isCatchAll: false, validEmail });
+        // Catch-all detection: only if we found a valid email
+        let isCatchAll = false;
+        if (validEmail) {
+          await sendCommand(socket, "RSET");
+          await sendCommand(socket, `MAIL FROM:<>`);
+          const catchAllCheck = await sendCommand(socket, `RCPT TO:<${randomEmail}>`);
+          if (catchAllCheck.code === 250) {
+            isCatchAll = true;
+            // Mark the valid result as inconclusive since domain is catch-all
+            results.set(validEmail, { valid: null, message: "Catch-all domain detected" });
+            validEmail = null;
+          }
+        }
+
+        finish({ results, isCatchAll, validEmail });
       } catch (err: any) {
         finish(inconclusive(`SMTP error: ${err.message}`));
       }
