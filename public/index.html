@@ -19,6 +19,133 @@
     <div id="suggestion" class="suggestion hidden"></div>
     <div id="results" class="results hidden"></div>
   </div>
+
+  <div class="container docs-container">
+    <h2>API Documentation</h2>
+    <p class="subtitle">Use these endpoints to integrate email verification into your applications.</p>
+
+    <!-- Single Verify -->
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method post">POST</span>
+        <code class="path">/api/verify</code>
+      </div>
+      <p class="endpoint-desc">Verify a single email address. Runs format, MX, SMTP, disposable, role-based, and free provider checks.</p>
+
+      <div class="doc-section">
+        <h4>Request Body</h4>
+        <pre><code>{
+  "email": "user@example.com"
+}</code></pre>
+      </div>
+
+      <div class="doc-section">
+        <h4>Response</h4>
+        <pre><code>{
+  "email": "user@example.com",
+  "isValid": true,
+  "checks": {
+    "format":       { "passed": true,  "message": "Valid email format" },
+    "mx":           { "passed": true,  "message": "MX records found", "records": [...] },
+    "smtp":         { "passed": true,  "message": "Mailbox exists" },
+    "disposable":   { "passed": true,  "message": "Not a disposable email" },
+    "roleBased":    { "passed": true,  "message": "Not a role-based address" },
+    "freeProvider": { "passed": false, "message": "Free email provider (gmail.com)" }
+  },
+  "isCatchAll": false,
+  "suggestedDomain": null,
+  "timestamp": "2026-02-16T12:00:00.000Z"
+}</code></pre>
+      </div>
+
+      <div class="doc-section">
+        <h4>Example</h4>
+        <pre><code>curl -X POST /api/verify \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'</code></pre>
+      </div>
+    </div>
+
+    <!-- Batch Verify -->
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="method post">POST</span>
+        <code class="path">/api/verify/batch</code>
+      </div>
+      <p class="endpoint-desc">Verify up to 10 emails on the same domain in a single request. Uses one SMTP connection with early exit on the first valid mailbox found.</p>
+
+      <div class="doc-section">
+        <h4>Request Body</h4>
+        <pre><code>{
+  "emails": [
+    "john.smith@company.com",
+    "jsmith@company.com",
+    "john.s@company.com"
+  ]
+}</code></pre>
+        <div class="constraints">
+          <span class="constraint">Max 10 emails</span>
+          <span class="constraint">Same domain required</span>
+        </div>
+      </div>
+
+      <div class="doc-section">
+        <h4>Response</h4>
+        <pre><code>{
+  "domain": "company.com",
+  "isCatchAll": false,
+  "domainInfo": {
+    "isDisposable": false,
+    "isFreeProvider": false,
+    "hasMxRecords": true,
+    "mxRecords": [
+      { "exchange": "mx1.company.com", "priority": 10 }
+    ]
+  },
+  "results": [
+    {
+      "email": "john.smith@company.com",
+      "isValid": false,
+      "smtp": { "passed": false, "message": "Mailbox does not exist" }
+    },
+    {
+      "email": "jsmith@company.com",
+      "isValid": true,
+      "smtp": { "passed": true, "message": "Mailbox exists" }
+    },
+    {
+      "email": "john.s@company.com",
+      "isValid": false,
+      "smtp": { "passed": false, "message": "Skipped (early exit)" }
+    }
+  ],
+  "validEmail": "jsmith@company.com",
+  "stoppedEarly": true,
+  "timestamp": "2026-02-16T12:00:00.000Z"
+}</code></pre>
+      </div>
+
+      <div class="doc-section">
+        <h4>Example</h4>
+        <pre><code>curl -X POST /api/verify/batch \
+  -H "Content-Type: application/json" \
+  -d '{"emails": ["john@company.com", "jsmith@company.com"]}'</code></pre>
+      </div>
+
+      <div class="doc-section">
+        <h4>Error Responses</h4>
+        <table class="error-table">
+          <thead><tr><th>Status</th><th>Condition</th></tr></thead>
+          <tbody>
+            <tr><td><code>400</code></td><td>emails is not a non-empty array</td></tr>
+            <tr><td><code>400</code></td><td>More than 10 emails</td></tr>
+            <tr><td><code>400</code></td><td>Emails span multiple domains</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
